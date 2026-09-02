@@ -110,3 +110,13 @@
     display: none;
   }
 }
+/* Ocultar marca de agua flotante de Netlify */
+div[id*="netlify"],
+iframe[id*="netlify"],
+[class*="netlify-badge"],
+#netlify-nitro-badge {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
