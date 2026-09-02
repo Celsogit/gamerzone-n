@@ -61,8 +61,18 @@ export function GameCard({
 }: Props) {
   const isPriority = index < priorityCount;
   const holderRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(isPriority);
+  
+  // 🔥 CORRECCIÓN CLAVE: Todas las tarjetas empiezan en visible = false 
+  // para que usen estrictamente el mismo efecto gradual de aparición al cargar
+  const [visible, setVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // Efecto extra para asegurar que si el usuario cambia de consola/plataforma,
+  // las tarjetas se reseteen y vuelvan a hacer la animación suave desde cero
+  useEffect(() => {
+    setVisible(false);
+    setLoaded(false);
+  }, [game.id]);
 
   useEffect(() => {
     if (visible) return;
@@ -81,6 +91,8 @@ export function GameCard({
           observer.disconnect();
         }
       },
+      // Le dejamos un margen generoso de 300px para que las de arriba se activen 
+      // solas inmediatamente al nacer sin necesidad de arrastrar obligatoriamente el dedo
       { rootMargin: "300px 0px" },
     );
     observer.observe(node);

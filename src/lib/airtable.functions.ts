@@ -8,6 +8,8 @@ export type Game = {
   name: string;
   platform: string;
   cover: string | null;
+  banner: string | null;
+  heading: string | null;
   description: string | null;
   trailer: string | null;
   createdTime: string;
@@ -23,9 +25,14 @@ type AirtableRecord = {
   createdTime: string;
   fields: {
     Name?: string;
+    Encabezado?: unknown;
     "Descripción"?: unknown;
     "Tráiler"?: unknown;
     "Subir Portada"?: Array<{
+      url?: string;
+      thumbnails?: { large?: { url?: string }; full?: { url?: string } };
+    }>;
+    "Subir Banner"?: Array<{
       url?: string;
       thumbnails?: { large?: { url?: string }; full?: { url?: string } };
     }>;
@@ -48,10 +55,15 @@ const SOURCES: Array<{ platform: string; baseId: string; table: string }> = [
   { platform: "XBOX", baseId: "appK6pyoLMuu4YFpF", table: "XBOX" },
   { platform: "XBOX 360", baseId: "appmLhHGmSUC71PPz", table: "XBOX 360" },
   { platform: "PC", baseId: "app4T8855KJAdBYHE", table: "PC" },
+  { platform: "NOTICIAS", baseId: "app1ox9TWrWF6RZd1", table: "Noticias" }
 ];
 
+const AIRTABLE_TOKEN =
+  (typeof process !== "undefined" && process.env?.["AIRTABLE_PERSONAL_ACCESS_TOKEN"]) ||
+  "patSPbilgD53Vc77E.4fb84a22afd742fafed12c95151680e65694f939645d5582b505d81c870a6811";
+
 export const listCatalog = createServerFn({ method: "GET" }).handler(async (): Promise<Catalog> => {
-  const token = process.env["AIRTABLE_PERSONAL_ACCESS_TOKEN"];
+  const token = AIRTABLE_TOKEN;
   if (!token) {
     throw new Error("Airtable token is not configured");
   }
@@ -60,6 +72,7 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
 
   const platforms: string[] = [];
   for (const source of SOURCES) {
+    if (source.platform === "NOTICIAS") continue;
     if (!platforms.includes(source.platform)) platforms.push(source.platform);
   }
 
@@ -69,16 +82,21 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
       let offset: string | undefined;
       do {
         const params = new URLSearchParams();
-        params.append("fields[]", "Name");
-        params.append("fields[]", "Subir Portada");
-        params.append("fields[]", "Descripción");
-        params.append("fields[]", "Tráiler");
+        const fields =
+          table === "Noticias"
+            ? ["Name", "Encabezado", "Descripción", "Subir Banner"]
+            : ["Name", "Descripción", "Subir Portada", "Tráiler"];
+        for (const field of fields) params.append("fields[]", field);
         params.set("pageSize", "100");
         if (offset) params.set("offset", offset);
 
         const res = await fetch(
           `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params.toString()}`,
-          { headers },
+          { 
+            headers,
+            // 🔥 El único cambio quirúrgico y seguro: indicarle a Cloudflare que guarde el caché de red por 5 minutos
+            cf: { cacheEverything: true, cacheTtl: 60 } 
+          } as any,
         );
         if (!res.ok) {
           const body = await res.text();
@@ -88,11 +106,19 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
         const json = (await res.json()) as { offset?: string; records: AirtableRecord[] };
 
         for (const record of json.records) {
-          const attachment = record.fields["Subir Portada"]?.[0];
+          const attachments = table === "Noticias" ? undefined : record.fields["Subir Portada"];
+          const attachment = Array.isArray(attachments) ? attachments[0] : undefined;
           const cover =
             attachment?.thumbnails?.large?.url ??
             attachment?.thumbnails?.full?.url ??
             attachment?.url ??
+            null;
+          const bannerAttachments = record.fields["Subir Banner"];
+          const bannerAttachment = Array.isArray(bannerAttachments) ? bannerAttachments[0] : undefined;
+          const banner =
+            bannerAttachment?.thumbnails?.large?.url ??
+            bannerAttachment?.thumbnails?.full?.url ??
+            bannerAttachment?.url ??
             null;
           const name = (record.fields.Name ?? "").trim();
           if (!name) continue;
@@ -101,7 +127,9 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
             name,
             platform,
             cover,
+            banner,
             description: toText(record.fields["Descripción"]),
+            heading: table === "Noticias" ? toText(record.fields.Encabezado) : null,
             trailer: toText(record.fields["Tráiler"]),
             createdTime: record.createdTime,
           });

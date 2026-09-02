@@ -1,0 +1,6 @@
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[functions]
+  nodejs_js = true
