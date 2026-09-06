@@ -48,31 +48,6 @@ export const Route = createFileRoute("/")({
 });
 
 function CatalogPage() {
-  // =========================================================================
-  // INTEGRACIÓN PORTAL CAUTIVO (Autenticación Automática en un Milisegundo)
-  // =========================================================================
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tok = urlParams.get("tok");
-      const gatewayAddress = urlParams.get("gatewayaddress");
-      const gatewayPort = urlParams.get("gatewayport");
-
-      if (tok && gatewayAddress && gatewayPort) {
-        const authUrl = `http://${gatewayAddress}:${gatewayPort}/opennds_auth/?tok=${tok}`;
-
-        // Petición invisible al router para autorizar el internet tras bastidores
-        fetch(authUrl, { mode: "no-cors" })
-          .then(() => {
-            // Limpia las variables feas (?tok=...) de la barra del navegador
-            window.history.replaceState({}, document.title, window.location.pathname);
-          })
-          .catch((error) => console.error("Error portal cautivo:", error));
-      }
-    }
-  }, []);
-  // =========================================================================
-
   const { data: catalog } = useSuspenseQuery(catalogQueryOptions);
   const games = catalog.games;
   const [selected, setSelected] = useState<Game | null>(null);
@@ -241,12 +216,20 @@ function NewsBanner({ newsGames }: { newsGames: Game[] }) {
           return (
             <div
               key={news.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === activeNewsIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-              }`}
+              className={`absolute inset-0 transition-opacity duration-700 ${activeNewsIndex === index ? "opacity-100" : "pointer-events-none opacity-0"}`}
             >
-              {/* Aquí asumo que continúa la lógica de renderizado de tus noticias tal cual lo tenías */}
-              <div className="p-6 text-white">{description}</div>
+              {news.banner && (
+                <img src={news.banner} alt="" className="absolute inset-0 h-full w-full rounded-xl object-cover" />
+              )}
+              <div className="absolute inset-0 backdrop-blur-[3px]" />
+              <div className="relative flex h-full items-center justify-start p-4 text-left sm:p-10 md:p-12">
+                <div className="relative w-[78%] max-w-xl text-left text-white sm:w-auto">
+                  <div className="absolute -inset-x-6 -inset-y-5 -z-10 backdrop-blur-[2px]" />
+                  <p className="font-display text-[clamp(0.75rem,1.6vw,1.5rem)] font-bold uppercase tracking-[0.12em] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:tracking-[0.16em]">{news.heading}</p>
+                  <h2 className="mt-2 font-display text-[clamp(1.25rem,3.1vw,2.75rem)] font-extrabold leading-[1.08] tracking-[-0.01em] drop-shadow-[0_3px_4px_rgba(0,0,0,0.95)] sm:mt-5">{news.name}</h2>
+                  <p className="mt-2 font-display text-[clamp(0.9rem,1.8vw,1.75rem)] font-medium leading-[1.3] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:mt-5 sm:leading-[1.45]">{description}</p>
+                </div>
+              </div>
             </div>
           );
         })}
