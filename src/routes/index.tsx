@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Catálogo de Carátulas de Videojuegos | Retro y Actual" },
+      { title: "Catálogo GAMERZONE | Catálogo GAMERZONE" },
       {
         name: "description",
         content:
