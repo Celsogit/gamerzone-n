@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Carrusel de recién añadidos, más vistos y plataformas con sinopsis y tráilers al instante.",
+          "Plataformas con sinopsis y tráilers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
