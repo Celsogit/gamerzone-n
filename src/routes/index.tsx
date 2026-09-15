@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
         content:
           "Explora carátulas de videojuegos de 3DS, Wii, WiiU, Switch, PlayStation, Xbox y PC con sinopsis y tráilers.",
       },
-      { property: "og:title", content: "Catálogo de Carátulas de Videojuegos" },
+      { property: "og:title", content: "Catálogo GAMERZONE" },
       {
         property: "og:description",
         content:
