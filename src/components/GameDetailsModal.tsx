@@ -46,24 +46,25 @@ export function GameDetailsModal({ game, onClose, onOpenCover }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/85 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background/85 p-3 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={game.name}
       onClick={onClose}
     >
-      <div
-        className="relative w-full max-w-3xl rounded-2xl border border-border bg-card p-4 sm:p-6"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-colors hover:bg-muted"
-          aria-label="Cerrar"
+      <div className="flex min-h-full items-start justify-center">
+        <div
+          className="relative my-auto w-full max-w-3xl rounded-2xl border border-border bg-card p-4 sm:p-6"
+          onClick={(event) => event.stopPropagation()}
         >
-          ✕
-        </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-colors hover:bg-muted"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
 
         <div className="flex flex-col gap-4 sm:flex-row">
           {game.cover ? (
@@ -138,6 +139,7 @@ export function GameDetailsModal({ game, onClose, onOpenCover }: Props) {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

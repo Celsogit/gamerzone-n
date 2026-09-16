@@ -28,30 +28,32 @@ export function CoverLightbox({ game, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-background/85 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-[60] overflow-y-auto bg-background/85 p-3 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={`Carátula de ${game.name}`}
       onClick={onClose}
     >
-      <div
-        className="relative flex h-[calc(100vh-1.5rem)] w-full max-w-[95vw] flex-col items-center justify-center sm:h-[calc(100vh-3rem)] sm:max-w-3xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-colors hover:bg-muted"
-          aria-label="Cerrar"
+      <div className="flex min-h-full items-center justify-center">
+        <div
+          className="relative my-auto flex h-[calc(100vh-1.5rem)] w-full max-w-[95vw] flex-col items-center justify-center sm:h-[calc(100vh-3rem)] sm:max-w-3xl"
+          onClick={(event) => event.stopPropagation()}
         >
-          ✕
-        </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 z-10 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-colors hover:bg-muted"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
 
-        <img
-          src={game.cover}
-          alt={`Carátula ampliada de ${game.name}`}
-          className="h-full w-full object-contain shadow-2xl"
-        />
+          <img
+            src={game.cover}
+            alt={`Carátula ampliada de ${game.name}`}
+            className="h-full w-full object-contain shadow-2xl"
+          />
+        </div>
       </div>
     </div>
   );
