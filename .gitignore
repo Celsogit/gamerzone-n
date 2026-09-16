@@ -30,3 +30,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local data
+.data/
+
+# Netlify build output and cache
+.netlify/

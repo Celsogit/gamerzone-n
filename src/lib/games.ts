@@ -1,7 +1,9 @@
 import type { Game } from "./airtable.functions";
 
-const VIEWS_KEY = "game-views-v1";
-
+/**
+ * Las vistas ahora son globales (compartidas entre todos los usuarios y
+ * dispositivos) y se guardan con Netlify Blobs. Ver `src/lib/views.functions.ts`.
+ */
 
 export function youtubeSearchUrl(name: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
@@ -9,39 +11,11 @@ export function youtubeSearchUrl(name: string): string {
   )}`;
 }
 
-export function readViews(): Record<string, number> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(VIEWS_KEY) ?? "{}") as Record<string, number>;
-  } catch {
-    return {};
-  }
-}
-
-export function trackView(id: string): Record<string, number> {
-  const views = readViews();
-  views[id] = (views[id] ?? 0) + 1;
-  try {
-    window.localStorage.setItem(VIEWS_KEY, JSON.stringify(views));
-  } catch {
-    /* ignore quota errors */
-  }
-  return views;
-}
-
-export function mostViewed(games: Game[], views: Record<string, number>, limit = 15): Game[] {
-  return [...games]
-    .sort((a, b) => {
-      const diff = (views[b.id] ?? 0) - (views[a.id] ?? 0);
-      if (diff !== 0) return diff;
-      return a.name.localeCompare(b.name, "es");
-    })
-    .slice(0, limit);
-}
-
 export function recentlyAdded(games: Game[], limit = 18): Game[] {
   return [...games]
-    .sort((a, b) => b.createdTime.localeCompare(a.createdTime) || a.name.localeCompare(b.name, "es"))
+    .sort(
+      (a, b) => b.createdTime.localeCompare(a.createdTime) || a.name.localeCompare(b.name, "es"),
+    )
     .slice(0, limit);
 }
 

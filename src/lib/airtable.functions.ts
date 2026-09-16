@@ -26,8 +26,8 @@ type AirtableRecord = {
   fields: {
     Name?: string;
     Encabezado?: unknown;
-    "Descripción"?: unknown;
-    "Tráiler"?: unknown;
+    Descripción?: unknown;
+    Tráiler?: unknown;
     "Subir Portada"?: Array<{
       url?: string;
       thumbnails?: { large?: { url?: string }; full?: { url?: string } };
@@ -55,14 +55,42 @@ const SOURCES: Array<{ platform: string; baseId: string; table: string }> = [
   { platform: "XBOX", baseId: "appK6pyoLMuu4YFpF", table: "XBOX" },
   { platform: "XBOX 360", baseId: "appmLhHGmSUC71PPz", table: "XBOX 360" },
   { platform: "PC", baseId: "app4T8855KJAdBYHE", table: "PC" },
-  { platform: "NOTICIAS", baseId: "app1ox9TWrWF6RZd1", table: "Noticias" }
+  { platform: "NOTICIAS", baseId: "app1ox9TWrWF6RZd1", table: "Noticias" },
 ];
 
 const AIRTABLE_TOKEN =
   (typeof process !== "undefined" && process.env?.["AIRTABLE_PERSONAL_ACCESS_TOKEN"]) ||
   "patSPbilgD53Vc77E.4fb84a22afd742fafed12c95151680e65694f939645d5582b505d81c870a6811";
 
+// Caché en memoria del catálogo: evita golpear Airtable con ~16 peticiones en
+// cada carga. Se reutiliza durante CATALOG_TTL_MS y luego se refresca solo.
+const CATALOG_TTL_MS = 60_000;
+let catalogCache: { data: Catalog; expiresAt: number } | null = null;
+let catalogInFlight: Promise<Catalog> | null = null;
+
 export const listCatalog = createServerFn({ method: "GET" }).handler(async (): Promise<Catalog> => {
+  const now = Date.now();
+  if (catalogCache && catalogCache.expiresAt > now) {
+    return catalogCache.data;
+  }
+  // Si ya hay una carga en curso, esperamos a esa en lugar de disparar otra.
+  if (catalogInFlight) {
+    return catalogInFlight;
+  }
+
+  catalogInFlight = loadCatalog()
+    .then((catalog) => {
+      catalogCache = { data: catalog, expiresAt: Date.now() + CATALOG_TTL_MS };
+      return catalog;
+    })
+    .finally(() => {
+      catalogInFlight = null;
+    });
+
+  return catalogInFlight;
+});
+
+async function loadCatalog(): Promise<Catalog> {
   const token = AIRTABLE_TOKEN;
   if (!token) {
     throw new Error("Airtable token is not configured");
@@ -92,10 +120,10 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
 
         const res = await fetch(
           `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params.toString()}`,
-          { 
+          {
             headers,
             // 🔥 El único cambio quirúrgico y seguro: indicarle a Cloudflare que guarde el caché de red por 5 minutos
-            cf: { cacheEverything: true, cacheTtl: 60 } 
+            cf: { cacheEverything: true, cacheTtl: 60 },
           } as any,
         );
         if (!res.ok) {
@@ -114,7 +142,9 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
             attachment?.url ??
             null;
           const bannerAttachments = record.fields["Subir Banner"];
-          const bannerAttachment = Array.isArray(bannerAttachments) ? bannerAttachments[0] : undefined;
+          const bannerAttachment = Array.isArray(bannerAttachments)
+            ? bannerAttachments[0]
+            : undefined;
           const banner =
             bannerAttachment?.thumbnails?.large?.url ??
             bannerAttachment?.thumbnails?.full?.url ??
@@ -149,8 +179,7 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
     );
 
   return { platforms, games };
-});
-
+}
 
 export const getGameDetails = createServerFn({ method: "GET" })
   .inputValidator((data: { name: string }) => {

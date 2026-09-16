@@ -1,7 +1,8 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Gamepad2, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CoverLightbox } from "@/components/CoverLightbox";
 import { GameCarousel } from "@/components/GameCarousel";
@@ -11,7 +12,8 @@ import { PlatformCard } from "@/components/PlatformCard";
 import { type Game } from "@/lib/airtable.functions";
 import { toText } from "@/lib/airtable-fields";
 import { catalogQueryOptions } from "@/lib/games-query";
-import { mostViewed, readViews, recentlyAdded, trackView } from "@/lib/games";
+import { recentlyAdded } from "@/lib/games";
+import { getGlobalViews, trackGlobalView } from "@/lib/views.functions";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
@@ -28,8 +30,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Catálogo GAMERZONE" },
       {
         property: "og:description",
-        content:
-          "Plataformas con sinopsis y tráilers.",
+        content: "Plataformas con sinopsis y tráilers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -52,28 +53,65 @@ function CatalogPage() {
   const games = catalog.games;
   const [selected, setSelected] = useState<Game | null>(null);
   const [lightboxGame, setLightboxGame] = useState<Game | null>(null);
-  const [views, setViews] = useState<Record<string, number>>({});
   const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    setViews(readViews());
-  }, []);
+  const queryClient = useQueryClient();
+  const fetchGlobalViews = useServerFn(getGlobalViews);
+  const submitGlobalView = useServerFn(trackGlobalView);
 
-  const openDetail = (game: Game) => {
-    setSelected(game);
-    setViews(trackView(game.id));
-  };
+  // Ranking global de vistas (sincronizado cada 5s y al cambiar de pestaña)
+  const { data: views = {}, refetch: refetchViews } = useQuery({
+    queryKey: ["global-views"],
+    queryFn: () => fetchGlobalViews(),
+    staleTime: 3000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+  });
 
-  const openCover = (game: Game) => {
-    setLightboxGame(game);
-  };
+  // Registra la vista tanto en servidor como instantáneamente en la interfaz (optimista)
+  const recordView = useCallback(
+    (game: Game) => {
+      // 1. Actualización inmediata en pantalla
+      queryClient.setQueryData<Record<string, number>>(["global-views"], (old = {}) => ({
+        ...old,
+        [game.id]: (old[game.id] ?? 0) + 1,
+      }));
 
-  const catalogGames = useMemo(
-    () => games.filter((game) => game.platform !== "NOTICIAS"),
-    [games],
+      // 2. Persistir en el servidor
+      submitGlobalView({ data: { id: game.id } })
+        .then(() => refetchViews())
+        .catch((error) => console.error("No se pudo registrar la vista", error));
+    },
+    [queryClient, submitGlobalView, refetchViews],
   );
+
+  const openDetail = useCallback(
+    (game: Game) => {
+      setSelected(game);
+      recordView(game);
+    },
+    [recordView],
+  );
+
+  const openCover = useCallback(
+    (game: Game) => {
+      setLightboxGame(game);
+      recordView(game);
+    },
+    [recordView],
+  );
+
+  const catalogGames = useMemo(() => games.filter((game) => game.platform !== "NOTICIAS"), [games]);
   const recent = useMemo(() => recentlyAdded(catalogGames), [catalogGames]);
-  const popular = useMemo(() => mostViewed(catalogGames, views, 10), [catalogGames, views]);
+  const popular = useMemo(() => {
+    return [...catalogGames]
+      .sort((a, b) => {
+        const diff = (views[b.id] ?? 0) - (views[a.id] ?? 0);
+        if (diff !== 0) return diff;
+        return a.name.localeCompare(b.name, "es");
+      })
+      .slice(0, 10);
+  }, [catalogGames, views]);
 
   const newsGames = useMemo(() => {
     return games
@@ -94,7 +132,11 @@ function CatalogPage() {
       {!term && (
         <header className="bg-white/90 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-5 sm:px-6">
-            <a href="/" className="flex min-w-0 items-center gap-3" aria-label="Gamer Zone Caibarién">
+            <a
+              href="/"
+              className="flex min-w-0 items-center gap-3"
+              aria-label="Gamer Zone Caibarién"
+            >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#15345b] text-white shadow-sm">
                 <Gamepad2 className="h-5 w-5" />
               </span>
@@ -189,7 +231,9 @@ function SearchBar({
           <Search className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
         </label>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">{totalGames} títulos sincronizados en tiempo real.</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {totalGames} títulos sincronizados en tiempo real.
+      </p>
     </section>
   );
 }
@@ -212,22 +256,33 @@ function NewsBanner({ newsGames }: { newsGames: Game[] }) {
     <section className="mx-auto max-w-7xl px-4 pt-3 sm:px-6">
       <div className="relative aspect-[5/3] overflow-hidden rounded-xl bg-[#050811] shadow-lg sm:aspect-[3/1]">
         {newsGames.map((news, index) => {
-          const description = typeof news.description === "string" ? news.description : toText(news.description);
+          const description =
+            typeof news.description === "string" ? news.description : toText(news.description);
           return (
             <div
               key={news.id}
               className={`absolute inset-0 transition-opacity duration-700 ${activeNewsIndex === index ? "opacity-100" : "pointer-events-none opacity-0"}`}
             >
               {news.banner && (
-                <img src={news.banner} alt="" className="absolute inset-0 h-full w-full rounded-xl object-cover" />
+                <img
+                  src={news.banner}
+                  alt=""
+                  className="absolute inset-0 h-full w-full rounded-xl object-cover"
+                />
               )}
               <div className="absolute inset-0 backdrop-blur-[3px]" />
               <div className="relative flex h-full items-center justify-start p-4 text-left sm:p-10 md:p-12">
                 <div className="relative w-[78%] max-w-xl text-left text-white sm:w-auto">
                   <div className="absolute -inset-x-6 -inset-y-5 -z-10 backdrop-blur-[2px]" />
-                  <p className="font-display text-[clamp(0.75rem,1.6vw,1.5rem)] font-bold uppercase tracking-[0.12em] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:tracking-[0.16em]">{news.heading}</p>
-                  <h2 className="mt-2 font-display text-[clamp(1.25rem,3.1vw,2.75rem)] font-extrabold leading-[1.08] tracking-[-0.01em] drop-shadow-[0_3px_4px_rgba(0,0,0,0.95)] sm:mt-5">{news.name}</h2>
-                  <p className="mt-2 font-display text-[clamp(0.9rem,1.8vw,1.75rem)] font-medium leading-[1.3] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:mt-5 sm:leading-[1.45]">{description}</p>
+                  <p className="font-display text-[clamp(0.75rem,1.6vw,1.5rem)] font-bold uppercase tracking-[0.12em] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:tracking-[0.16em]">
+                    {news.heading}
+                  </p>
+                  <h2 className="mt-2 font-display text-[clamp(1.25rem,3.1vw,2.75rem)] font-extrabold leading-[1.08] tracking-[-0.01em] drop-shadow-[0_3px_4px_rgba(0,0,0,0.95)] sm:mt-5">
+                    {news.name}
+                  </h2>
+                  <p className="mt-2 font-display text-[clamp(0.9rem,1.8vw,1.75rem)] font-medium leading-[1.3] text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] sm:mt-5 sm:leading-[1.45]">
+                    {description}
+                  </p>
                 </div>
               </div>
             </div>

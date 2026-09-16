@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CoverLightbox } from "@/components/CoverLightbox";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
@@ -9,7 +10,7 @@ import { GameGrid } from "@/components/GameGrid";
 import { type Game } from "@/lib/airtable.functions";
 import { catalogQueryOptions } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/platform-art";
-import { trackView } from "@/lib/games";
+import { trackGlobalView } from "@/lib/views.functions";
 
 export const Route = createFileRoute("/plataforma/$platform")({
   loader: ({ context }) => {
@@ -57,14 +58,28 @@ function PlatformPage() {
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [games, platform, query]);
 
-  const openDetail = (game: Game) => {
-    setSelected(game);
-    trackView(game.id);
-  };
+  const submitGlobalView = useServerFn(trackGlobalView);
 
-  const openCover = (game: Game) => {
-    setLightboxGame(game);
-  };
+  const openDetail = useCallback(
+    (game: Game) => {
+      setSelected(game);
+      submitGlobalView({ data: { id: game.id } }).catch((error) =>
+        console.error("No se pudo registrar la vista", error),
+      );
+    },
+    [submitGlobalView],
+  );
+
+  const openCover = useCallback(
+    (game: Game) => {
+      setLightboxGame(game);
+      // 🔥 Registra la vista al interactuar con la carátula
+      submitGlobalView({ data: { id: game.id } }).catch((error) =>
+        console.error("No se pudo registrar la vista de carátula", error),
+      );
+    },
+    [submitGlobalView],
+  );
 
   return (
     <main className="min-h-screen pb-20">
