@@ -182,12 +182,13 @@ async function loadCatalog(): Promise<Catalog> {
 }
 
 export const getGameDetails = createServerFn({ method: "GET" })
-  .inputValidator((data: { name: string }) => {
+  .inputValidator((data: { name: string; platform?: string | undefined }) => {
     const name = String(data?.name ?? "")
       .trim()
       .slice(0, 200);
+    const platform = data?.platform ? String(data.platform).trim().slice(0, 50) : undefined;
     if (!name) throw new Error("Nombre requerido");
-    return { name };
+    return { name, platform };
   })
   .handler(
     async ({
@@ -199,7 +200,7 @@ export const getGameDetails = createServerFn({ method: "GET" })
     }> => {
       const [wiki, videoId] = await Promise.all([
         lookupWikipedia(data.name),
-        lookupTrailer(data.name),
+        lookupTrailer(data.name, data.platform),
       ]);
       return { extract: wiki.extract, wikipediaUrl: wiki.url, videoId };
     },

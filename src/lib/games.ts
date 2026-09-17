@@ -5,9 +5,18 @@ import type { Game } from "./airtable.functions";
  * dispositivos) y se guardan con Netlify Blobs. Ver `src/lib/views.functions.ts`.
  */
 
-export function youtubeSearchUrl(name: string): string {
+export function formatTrailerSearchQuery(name: string, platform?: string | null): string {
+  const cleanName = name.trim();
+  const cleanPlatform = platform?.trim();
+  if (cleanPlatform) {
+    return `trailer oficial de ${cleanName} de ${cleanPlatform}`;
+  }
+  return `trailer oficial de ${cleanName}`;
+}
+
+export function youtubeSearchUrl(name: string, platform?: string | null): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(
-    `${name} official trailer`,
+    formatTrailerSearchQuery(name, platform),
   )}`;
 }
 
