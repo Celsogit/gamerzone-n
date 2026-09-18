@@ -53,7 +53,8 @@ const SOURCES: Array<{ platform: string; baseId: string; table: string }> = [
   { platform: "PS4", baseId: "appMLK7pyTz6oXWHt", table: "PS4" },
   { platform: "PS5", baseId: "appK6pyoLMuu4YFpF", table: "PS5" },
   { platform: "XBOX", baseId: "appK6pyoLMuu4YFpF", table: "XBOX" },
-  { platform: "XBOX 360", baseId: "appmLhHGmSUC71PPz", table: "XBOX 360" },
+  { platform: "XBOX 360", baseId: "appmLhHGmSUC71PPz", table: "XBOX 360_Parte1" },
+  { platform: "XBOX 360", baseId: "app4T8855KJAdBYHE", table: "XBOX 360_Parte2" },
   { platform: "PC", baseId: "app4T8855KJAdBYHE", table: "PC" },
   { platform: "NOTICIAS", baseId: "app1ox9TWrWF6RZd1", table: "Noticias" },
 ];

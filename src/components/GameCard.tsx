@@ -42,6 +42,8 @@ function buttonClasses(platform: string = ""): string {
     case "XBOX":
       return "!bg-[#1A1A1A] !text-[#B8FF3C]";
     case "XBOX 360":
+    case "XBOX 360_Parte1":
+    case "XBOX 360_Parte2":
       return "!bg-[#5CB811] !text-white hover:!bg-[#4A960E]";
     case "PC":
       return "bg-white text-[#001A4E] border border-gray-300 hover:bg-gray-100";
@@ -61,8 +63,8 @@ export function GameCard({
 }: Props) {
   const isPriority = index < priorityCount;
   const holderRef = useRef<HTMLDivElement>(null);
-  
-  // 🔥 CORRECCIÓN CLAVE: Todas las tarjetas empiezan en visible = false 
+
+  // 🔥 CORRECCIÓN CLAVE: Todas las tarjetas empiezan en visible = false
   // para que usen estrictamente el mismo efecto gradual de aparición al cargar
   const [visible, setVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -91,7 +93,7 @@ export function GameCard({
           observer.disconnect();
         }
       },
-      // Le dejamos un margen generoso de 300px para que las de arriba se activen 
+      // Le dejamos un margen generoso de 300px para que las de arriba se activen
       // solas inmediatamente al nacer sin necesidad de arrastrar obligatoriamente el dedo
       { rootMargin: "300px 0px" },
     );
