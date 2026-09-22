@@ -65,16 +65,38 @@ const AIRTABLE_TOKEN =
 
 // Caché en memoria del catálogo: evita golpear Airtable con ~16 peticiones en
 // cada carga. Se reutiliza durante CATALOG_TTL_MS y luego se refresca solo.
-const CATALOG_TTL_MS = 60_000;
+const CATALOG_TTL_MS = 5 * 60_000;
+const REQUEST_DELAY_MS = 350;
 let catalogCache: { data: Catalog; expiresAt: number } | null = null;
 let catalogInFlight: Promise<Catalog> | null = null;
+
+async function fetchWithRetry(
+  url: string,
+  headers: Record<string, string>,
+  retries = 4,
+): Promise<Response> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const res = await fetch(url, { headers });
+    if (res.status === 429 || res.status === 403) {
+      const retryAfter =
+        Number.parseInt(res.headers.get("Retry-After") ?? "", 10) ||
+        Math.pow(2, attempt) * 1000 * 1.5;
+      console.warn(
+        `Airtable ${res.status} en intento ${attempt + 1}/${retries}, esperando ${retryAfter}ms...`,
+      );
+      await new Promise((r) => setTimeout(r, retryAfter));
+      continue;
+    }
+    return res;
+  }
+  throw new Error("Airtable request failed after retries");
+}
 
 export const listCatalog = createServerFn({ method: "GET" }).handler(async (): Promise<Catalog> => {
   const now = Date.now();
   if (catalogCache && catalogCache.expiresAt > now) {
     return catalogCache.data;
   }
-  // Si ya hay una carga en curso, esperamos a esa en lugar de disparar otra.
   if (catalogInFlight) {
     return catalogInFlight;
   }
@@ -83,6 +105,14 @@ export const listCatalog = createServerFn({ method: "GET" }).handler(async (): P
     .then((catalog) => {
       catalogCache = { data: catalog, expiresAt: Date.now() + CATALOG_TTL_MS };
       return catalog;
+    })
+    .catch((error) => {
+      console.error("loadCatalog falló:", error);
+      if (catalogCache && catalogCache.expiresAt > Date.now()) {
+        console.warn("Usando caché expirado como fallback");
+        return catalogCache.data;
+      }
+      throw error;
     })
     .finally(() => {
       catalogInFlight = null;
@@ -97,7 +127,7 @@ async function loadCatalog(): Promise<Catalog> {
     throw new Error("Airtable token is not configured");
   }
 
-  const headers = { Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
   const platforms: string[] = [];
   for (const source of SOURCES) {
@@ -105,71 +135,72 @@ async function loadCatalog(): Promise<Catalog> {
     if (!platforms.includes(source.platform)) platforms.push(source.platform);
   }
 
-  const results = await Promise.all(
-    SOURCES.map(async ({ platform, baseId, table }) => {
-      const games: Game[] = [];
-      let offset: string | undefined;
-      do {
-        const params = new URLSearchParams();
-        const fields =
-          table === "Noticias"
-            ? ["Name", "Encabezado", "Descripción", "Subir Banner"]
-            : ["Name", "Descripción", "Subir Portada", "Tráiler"];
-        for (const field of fields) params.append("fields[]", field);
-        params.set("pageSize", "100");
-        if (offset) params.set("offset", offset);
+  const results: Game[][] = [];
+  for (const source of SOURCES) {
+    const { platform, baseId, table } = source;
+    const games: Game[] = [];
+    let offset: string | undefined;
+    do {
+      const params = new URLSearchParams();
+      const fields =
+        table === "Noticias"
+          ? ["Name", "Encabezado", "Descripción", "Subir Banner"]
+          : ["Name", "Descripción", "Subir Portada", "Tráiler"];
+      for (const field of fields) params.append("fields[]", field);
+      params.set("pageSize", "100");
+      if (offset) params.set("offset", offset);
 
-        const res = await fetch(
-          `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params.toString()}`,
-          {
-            headers,
-            // 🔥 El único cambio quirúrgico y seguro: indicarle a Cloudflare que guarde el caché de red por 5 minutos
-            cf: { cacheEverything: true, cacheTtl: 60 },
-          } as any,
-        );
-        if (!res.ok) {
-          const body = await res.text();
-          console.error(`Airtable request failed [${res.status}]: ${body}`);
-          throw new Error(`Airtable request failed [${res.status}]`);
-        }
-        const json = (await res.json()) as { offset?: string; records: AirtableRecord[] };
+      const res = await fetchWithRetry(
+        `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params.toString()}`,
+        headers,
+      );
 
-        for (const record of json.records) {
-          const attachments = table === "Noticias" ? undefined : record.fields["Subir Portada"];
-          const attachment = Array.isArray(attachments) ? attachments[0] : undefined;
-          const cover =
-            attachment?.thumbnails?.large?.url ??
-            attachment?.thumbnails?.full?.url ??
-            attachment?.url ??
-            null;
-          const bannerAttachments = record.fields["Subir Banner"];
-          const bannerAttachment = Array.isArray(bannerAttachments)
-            ? bannerAttachments[0]
-            : undefined;
-          const banner =
-            bannerAttachment?.thumbnails?.large?.url ??
-            bannerAttachment?.thumbnails?.full?.url ??
-            bannerAttachment?.url ??
-            null;
-          const name = (record.fields.Name ?? "").trim();
-          if (!name) continue;
-          games.push({
-            id: `${platform}:${baseId}:${record.id}`,
-            name,
-            platform,
-            cover,
-            banner,
-            description: toText(record.fields["Descripción"]),
-            heading: table === "Noticias" ? toText(record.fields.Encabezado) : null,
-            trailer: toText(record.fields["Tráiler"]),
-            createdTime: record.createdTime,
-          });
-        }
-        offset = json.offset;
-      } while (offset);
-      return games;
-    }),
-  );
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(`Airtable request failed [${res.status}]: ${body}`);
+        throw new Error(`Airtable request failed [${res.status}]`);
+      }
+      const json = (await res.json()) as { offset?: string; records: AirtableRecord[] };
+
+      for (const record of json.records) {
+        const attachments = table === "Noticias" ? undefined : record.fields["Subir Portada"];
+        const attachment = Array.isArray(attachments) ? attachments[0] : undefined;
+        const cover =
+          attachment?.thumbnails?.large?.url ??
+          attachment?.thumbnails?.full?.url ??
+          attachment?.url ??
+          null;
+        const bannerAttachments = record.fields["Subir Banner"];
+        const bannerAttachment = Array.isArray(bannerAttachments)
+          ? bannerAttachments[0]
+          : undefined;
+        const banner =
+          bannerAttachment?.thumbnails?.large?.url ??
+          bannerAttachment?.thumbnails?.full?.url ??
+          bannerAttachment?.url ??
+          null;
+        const name = (record.fields.Name ?? "").trim();
+        if (!name) continue;
+        games.push({
+          id: `${platform}:${baseId}:${record.id}`,
+          name,
+          platform,
+          cover,
+          banner,
+          description: toText(record.fields["Descripción"]),
+          heading: table === "Noticias" ? toText(record.fields.Encabezado) : null,
+          trailer: toText(record.fields["Tráiler"]),
+          createdTime: record.createdTime,
+        });
+      }
+      offset = json.offset;
+      if (offset) {
+        await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
+      }
+    } while (offset);
+    results.push(games);
+    await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
+  }
 
   const games = results
     .flat()
