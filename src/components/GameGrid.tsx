@@ -1,5 +1,5 @@
 import { useCoverAspect } from "@/hooks/use-cover-aspect";
-import type { Game } from "@/lib/airtable.functions";
+import type { Game } from "@/lib/supabase.functions";
 
 import { GameCard } from "./GameCard";
 

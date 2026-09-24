@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 
-import { getGameDetails, type Game } from "@/lib/airtable.functions";
+import { getGameDetails, type Game } from "@/lib/supabase.functions";
 import { youtubeIdFromUrl, youtubeSearchUrl } from "@/lib/games";
 
 type Props = {

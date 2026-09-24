@@ -1,0 +1,41 @@
+Airtable
+ Proyectos
+
+ BASE_ID
+  Grupo 1: 3DS, Wii, WiiU             appDyC2z6EDXkua73
+  Grupo 2: SWITCH, PS1, PS2_Parte1    appTWYx8k0AocMZ5p
+  Grupo 3: PS2_Parte2                 app83OMftPEbLERAQ
+  Grupo 4: PSP                        appJfJ38EFFll2pll
+  Grupo 5: PS3, PSVITA                appodREe6abwpkaAM
+  Grupo 6: PS4                        appMLK7pyTz6oXWHt
+  Grupo 7: PS5, XBOX                  appK6pyoLMuu4YFpF
+  Grupo 8: XBOX 360_Parte1            appmLhHGmSUC71PPz
+  Grupo 9: XBOX 360_Parte2, PC        app4T8855KJAdBYHE
+  Banner: Noticias                    app1ox9TWrWF6RZd1  
+ 
+ Tablas: 3DS, Wii, WiiU, SWITCH, PS1, PS2_Parte1, PS2_Parte2, PSP, PS3, PSVITA, PS4, PS5, XBOX, XBOX 360_Parte1, XBOX  360_Parte2, PC, Noticias
+
+Supabase
+ Proyectos
+
+ BASE_ID
+  CATALOGOS       ulnomncbhccqrynzlqqf
+
+ Tablas: 3DS, WII, WIIU, SWITCH, PS1, PS2, PSP, PS3, PSVITA, PS4, PS5, XBOX, XBOX360, PC, BANNER
+
+
+
+ Remplazar tablas de airtable a supabase esactamente asi:
+  3DS por 3DS, Wii por WII, WiiU por WIIU, SWITCH por SWITCH, PS1 por PS1, PS2_Parte1 y PS2_Parte2 por PS2, PSP por PSP, PS3   por PS3, PSVITA por PSVITA, PS4 por PS4, PS5 por PS5, XBOX por XBOX, XBOX 360_Parte1 y XBOX 360_Parte2 por XBOX360, PC por 
+  PC, Noticias por BANNER
+
+
+
+ Remplazar columnas de las tablas de airtable a supabase esactamente asi:
+  - En todas las tablas menos en la Tabla Noticias
+  Name por Nombre, Subir Portada por url, Descripción por Descripción, Tráiler por Tráiler
+  - Solo en la tabla noticias
+  Encabezado por Texto 1, Name por Texto 2, Descripción por Texto 3, Subir Banner por url
+
+ un ultimo detalle
+ las numeraciones "id" de las columnas de las tablas de airtable se sustituye por las numeraciones "id" de las columnas de las tablas de supabase

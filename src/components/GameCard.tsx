@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { Game } from "@/lib/airtable.functions";
+import type { Game } from "@/lib/supabase.functions";
 
 type Props = {
   game: Game;
@@ -21,29 +21,24 @@ function buttonClasses(platform: string = ""): string {
     case "3DS":
     case "PS5":
       return "bg-white text-black border border-gray-300 hover:bg-gray-100";
-    case "Wii":
+    case "WII":
       return "bg-white text-[#8A8A8A] border border-gray-300 hover:bg-gray-100";
-    case "WiiU":
+    case "WIIU":
       return "!bg-[#00BBE4] !text-white hover:!bg-[#00A5C9]";
     case "SWITCH":
       return "bg-[#E60012] text-white hover:bg-[#E60012]/90";
     case "PS1":
     case "PS2":
-    case "PS2_Parte1":
-    case "PS2_Parte2":
     case "PSP":
     case "PS3":
       return "bg-[#1A1A1A] text-white hover:bg-[#1A1A1A]/90";
-    case "PSVita":
     case "PSVITA":
       return "!bg-[#0095DA] !text-white hover:!bg-[#007BB8]";
     case "PS4":
       return "!bg-[#0095DA] !text-white hover:!bg-[#007BB8]";
     case "XBOX":
       return "!bg-[#1A1A1A] !text-[#B8FF3C]";
-    case "XBOX 360":
-    case "XBOX 360_Parte1":
-    case "XBOX 360_Parte2":
+    case "XBOX360":
       return "!bg-[#5CB811] !text-white hover:!bg-[#4A960E]";
     case "PC":
       return "bg-white text-[#001A4E] border border-gray-300 hover:bg-gray-100";

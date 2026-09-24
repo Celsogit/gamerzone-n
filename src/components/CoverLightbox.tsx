@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import type { Game } from "@/lib/airtable.functions";
+import type { Game } from "@/lib/supabase.functions";
 
 type Props = {
   game: Game | null;

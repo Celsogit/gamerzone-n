@@ -1,4 +1,4 @@
-import type { Game } from "./airtable.functions";
+import type { Game } from "./supabase.functions";
 
 /**
  * Las vistas ahora son globales (compartidas entre todos los usuarios y

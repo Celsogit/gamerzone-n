@@ -9,8 +9,7 @@ import { GameCarousel } from "@/components/GameCarousel";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
 import { GameGrid } from "@/components/GameGrid";
 import { PlatformCard } from "@/components/PlatformCard";
-import { type Game } from "@/lib/airtable.functions";
-import { toText } from "@/lib/airtable-fields";
+import { type Game } from "@/lib/supabase.functions";
 import { catalogQueryOptions } from "@/lib/games-query";
 import { recentlyAdded } from "@/lib/games";
 import { getGlobalViews, trackGlobalView } from "@/lib/views.functions";
@@ -256,8 +255,7 @@ function NewsBanner({ newsGames }: { newsGames: Game[] }) {
     <section className="mx-auto max-w-7xl px-4 pt-3 sm:px-6">
       <div className="relative aspect-[5/3] overflow-hidden rounded-xl bg-[#050811] shadow-lg sm:aspect-[3/1]">
         {newsGames.map((news, index) => {
-          const description =
-            typeof news.description === "string" ? news.description : toText(news.description);
+          const description = news.description;
           return (
             <div
               key={news.id}

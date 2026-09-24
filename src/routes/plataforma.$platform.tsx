@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CoverLightbox } from "@/components/CoverLightbox";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
 import { GameGrid } from "@/components/GameGrid";
-import { type Game } from "@/lib/airtable.functions";
+import { type Game } from "@/lib/supabase.functions";
 import { catalogQueryOptions } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/platform-art";
 import { trackGlobalView } from "@/lib/views.functions";

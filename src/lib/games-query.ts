@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listCatalog } from "./airtable.functions";
+import { listCatalog } from "./supabase.functions";
 
 export const catalogQueryOptions = queryOptions({
   queryKey: ["catalog"],
