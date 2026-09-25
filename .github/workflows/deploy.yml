@@ -33,7 +33,12 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://ulnomncbhccqrynzlqqf.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_USfwfy2ONPItJiHlwecXZw_EF9x49Rp
-        run: npm run build 2>&1 | tee build.log; test ${PIPESTATUS[0]} -eq 0
+        run: |
+          set +e
+          npm run build 2>&1 | tee build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "=== Build exit code: $BUILD_EXIT ==="
+          exit $BUILD_EXIT
 
       - name: Upload build log on failure
         if: failure()
