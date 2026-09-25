@@ -33,7 +33,14 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://ulnomncbhccqrynzlqqf.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_USfwfy2ONPItJiHlwecXZw_EF9x49Rp
-        run: npm run build
+        run: npm run build 2>&1 | tee build.log; test ${PIPESTATUS[0]} -eq 0
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Prepare static files
         run: |
