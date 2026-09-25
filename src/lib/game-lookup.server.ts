@@ -110,7 +110,7 @@ const PLATFORM_KEYWORDS: Record<string, { aliases: string[]; forbidden: string[]
     aliases: ["psp", "playstation portable"],
     forbidden: ["ps vita", "psvita", "vita", "ps2", "ps3", "ps4", "ps5", "switch", "wii"],
   },
-  PSVita: {
+  PSVITA: {
     aliases: ["ps vita", "psvita", "playstation vita", "vita"],
     forbidden: ["psp", "ps2", "ps3", "ps4", "ps5", "xbox", "switch"],
   },
@@ -118,11 +118,11 @@ const PLATFORM_KEYWORDS: Record<string, { aliases: string[]; forbidden: string[]
     aliases: ["3ds", "nintendo 3ds", "2ds"],
     forbidden: ["switch", "wii u", "wii", "playstation", "xbox"],
   },
-  Wii: {
+  WII: {
     aliases: ["wii", "nintendo wii"],
     forbidden: ["wii u", "wiiu", "switch", "ps3", "xbox 360"],
   },
-  WiiU: {
+  WIIU: {
     aliases: ["wii u", "wiiu", "nintendo wii u"],
     forbidden: ["switch", "ps4", "xbox one"],
   },
@@ -144,7 +144,7 @@ const PLATFORM_KEYWORDS: Record<string, { aliases: string[]; forbidden: string[]
       "switch",
     ],
   },
-  "XBOX 360": {
+  XBOX360: {
     aliases: ["xbox 360", "x360", "360"],
     forbidden: ["xbox one", "series x", "series s", "original xbox", "ps4", "ps5"],
   },
