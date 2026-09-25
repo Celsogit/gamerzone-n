@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   nitro: false,
-  vite: {
-    base: "/gamerzone-n/",
+   vite: {
+    base: './',
   },
 });
