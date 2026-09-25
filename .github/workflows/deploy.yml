@@ -38,7 +38,6 @@ jobs:
         run: |
           cd dist/client
           cp _shell.html index.html
-          cp _shell.html 404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
