@@ -1,14 +1,18 @@
 import { QueryClient } from "@tanstack/react-query";
-import { createHashHistory, createRouter } from "@tanstack/react-router";
+import { createHashHistory, createMemoryHistory, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
-  const hashHistory = createHashHistory();
+
+  const history =
+    typeof window !== "undefined"
+      ? createHashHistory()
+      : createMemoryHistory({ initialEntries: ["/"] });
 
   const router = createRouter({
     routeTree,
-    history: hashHistory,
+    history,
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
