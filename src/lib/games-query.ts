@@ -1,10 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listCatalog } from "./supabase.functions";
+import { getCatalog } from "./games-data";
 
 export const catalogQueryOptions = queryOptions({
   queryKey: ["catalog"],
-  queryFn: () => listCatalog(),
+  queryFn: () => getCatalog(),
   staleTime: 1000 * 60 * 5,
   refetchInterval: 1000 * 60 * 5,
 });

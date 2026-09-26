@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Gamepad2, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -9,10 +8,9 @@ import { GameCarousel } from "@/components/GameCarousel";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
 import { GameGrid } from "@/components/GameGrid";
 import { PlatformCard } from "@/components/PlatformCard";
-import { type Game } from "@/lib/supabase.functions";
+import { type Game, getGlobalViews, trackGlobalView } from "@/lib/games-data";
 import { catalogQueryOptions } from "@/lib/games-query";
 import { recentlyAdded } from "@/lib/games";
-import { getGlobalViews, trackGlobalView } from "@/lib/views.functions";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
@@ -55,13 +53,11 @@ function CatalogPage() {
   const [query, setQuery] = useState("");
 
   const queryClient = useQueryClient();
-  const fetchGlobalViews = useServerFn(getGlobalViews);
-  const submitGlobalView = useServerFn(trackGlobalView);
 
   // Ranking global de vistas (sincronizado cada 5s y al cambiar de pestaña)
   const { data: views = {}, refetch: refetchViews } = useQuery({
     queryKey: ["global-views"],
-    queryFn: () => fetchGlobalViews(),
+    queryFn: () => getGlobalViews(),
     staleTime: 3000,
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
@@ -76,12 +72,12 @@ function CatalogPage() {
         [game.id]: (old[game.id] ?? 0) + 1,
       }));
 
-      // 2. Persistir en el servidor
-      submitGlobalView({ data: { id: game.id } })
+      // 2. Persistir en Supabase
+      trackGlobalView(game.id)
         .then(() => refetchViews())
         .catch((error) => console.error("No se pudo registrar la vista", error));
     },
-    [queryClient, submitGlobalView, refetchViews],
+    [queryClient, refetchViews],
   );
 
   const openDetail = useCallback(

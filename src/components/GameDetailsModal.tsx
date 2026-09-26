@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 
-import { getGameDetails, type Game } from "@/lib/supabase.functions";
+import { getGameDetails, type Game } from "@/lib/games-data";
 import { youtubeIdFromUrl, youtubeSearchUrl } from "@/lib/games";
 
 type Props = {
@@ -12,21 +11,13 @@ type Props = {
 };
 
 export function GameDetailsModal({ game, onClose, onOpenCover }: Props) {
-  const fetchDetails = useServerFn(getGameDetails);
-
   const airtableDescription = game?.description ?? null;
   const airtableVideoId = game?.trailer ? youtubeIdFromUrl(game.trailer) : null;
-  const needsLookup = Boolean(game?.name) && (!airtableDescription || !airtableVideoId);
+  const needsLookup = Boolean(game?.name) && !airtableDescription;
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["game-details", game?.name, game?.platform],
-    queryFn: () =>
-      fetchDetails({
-        data: {
-          name: game!.name,
-          platform: game?.platform,
-        },
-      }),
+    queryKey: ["game-details", game?.name],
+    queryFn: () => getGameDetails(game!.name),
     enabled: needsLookup,
     staleTime: 1000 * 60 * 60,
   });
@@ -141,7 +132,8 @@ export function GameDetailsModal({ game, onClose, onOpenCover }: Props) {
                 <p className="text-sm text-muted-foreground">Buscando tráiler…</p>
               ) : (
                 <p className="px-4 text-center text-sm text-muted-foreground">
-                  No encontramos un tráiler para este título.
+                  Sin tráiler todavía. Usa «Ver más tráilers» para buscarlo en YouTube, o pega la
+                  URL del video en la columna «Tráiler» de Supabase.
                 </p>
               )}
             </div>

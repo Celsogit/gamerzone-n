@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import type { Game } from "@/lib/supabase.functions";
+import type { Game } from "@/lib/games-data";
 
 type Props = {
   game: Game | null;

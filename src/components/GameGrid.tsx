@@ -1,5 +1,5 @@
 import { useCoverAspect } from "@/hooks/use-cover-aspect";
-import type { Game } from "@/lib/supabase.functions";
+import type { Game } from "@/lib/games-data";
 
 import { GameCard } from "./GameCard";
 

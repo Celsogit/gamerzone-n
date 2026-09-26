@@ -26,7 +26,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build
         env:
@@ -36,14 +36,22 @@ jobs:
 
       - name: Prepare static files
         run: |
-          cd dist/client
-          cp _shell.html index.html
+          if [ -d dist/client ]; then SRC=dist/client; else SRC=dist; fi
+          echo "Publicando desde: $SRC"
+          ls -la "$SRC"
+          # Red de seguridad: si el build no generó index.html, usamos el shell.
+          if [ ! -f "$SRC/index.html" ]; then cp "$SRC/_shell.html" "$SRC/index.html"; fi
+          # GitHub Pages sirve 404.html en rutas desconocidas; así el SPA
+          # arranca igual cuando alguien entra por un enlace directo.
+          cp "$SRC/index.html" "$SRC/404.html"
+          # Evita que Jekyll ignore carpetas que empiezan con guion bajo.
+          touch "$SRC/.nojekyll"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/client
+          publish_dir: ./dist
           destination_dir: .
           keep_files: false
           force_orphan: true

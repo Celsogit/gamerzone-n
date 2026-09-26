@@ -1,16 +1,14 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CoverLightbox } from "@/components/CoverLightbox";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
 import { GameGrid } from "@/components/GameGrid";
-import { type Game } from "@/lib/supabase.functions";
+import { type Game, trackGlobalView } from "@/lib/games-data";
 import { catalogQueryOptions } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/platform-art";
-import { trackGlobalView } from "@/lib/views.functions";
 
 export const Route = createFileRoute("/plataforma/$platform")({
   loader: ({ context }) => {
@@ -58,28 +56,20 @@ function PlatformPage() {
       .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [games, platform, query]);
 
-  const submitGlobalView = useServerFn(trackGlobalView);
+  const openDetail = useCallback((game: Game) => {
+    setSelected(game);
+    trackGlobalView(game.id).catch((error) =>
+      console.error("No se pudo registrar la vista", error),
+    );
+  }, []);
 
-  const openDetail = useCallback(
-    (game: Game) => {
-      setSelected(game);
-      submitGlobalView({ data: { id: game.id } }).catch((error) =>
-        console.error("No se pudo registrar la vista", error),
-      );
-    },
-    [submitGlobalView],
-  );
-
-  const openCover = useCallback(
-    (game: Game) => {
-      setLightboxGame(game);
-      // 🔥 Registra la vista al interactuar con la carátula
-      submitGlobalView({ data: { id: game.id } }).catch((error) =>
-        console.error("No se pudo registrar la vista de carátula", error),
-      );
-    },
-    [submitGlobalView],
-  );
+  const openCover = useCallback((game: Game) => {
+    setLightboxGame(game);
+    // 🔥 Registra la vista al interactuar con la carátula
+    trackGlobalView(game.id).catch((error) =>
+      console.error("No se pudo registrar la vista de carátula", error),
+    );
+  }, []);
 
   return (
     <main className="min-h-screen pb-20">

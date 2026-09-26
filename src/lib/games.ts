@@ -1,8 +1,8 @@
-import type { Game } from "./supabase.functions";
+import type { Game } from "./games-data";
 
 /**
- * Las vistas ahora son globales (compartidas entre todos los usuarios y
- * dispositivos) y se guardan con Netlify Blobs. Ver `src/lib/views.functions.ts`.
+ * Las vistas son globales (compartidas entre todos los usuarios y dispositivos)
+ * y se guardan en la tabla `views` de Supabase. Ver `src/lib/games-data.ts`.
  */
 
 export function formatTrailerSearchQuery(name: string, platform?: string | null): string {
@@ -26,6 +26,15 @@ export function recentlyAdded(games: Game[], limit = 18): Game[] {
       (a, b) => b.createdTime.localeCompare(a.createdTime) || a.name.localeCompare(b.name, "es"),
     )
     .slice(0, limit);
+}
+
+export function normalize(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 export function youtubeIdFromUrl(url: string): string | null {
