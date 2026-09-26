@@ -36,22 +36,33 @@ jobs:
 
       - name: Prepare static files
         run: |
-          if [ -d dist/client ]; then SRC=dist/client; else SRC=dist; fi
-          echo "Publicando desde: $SRC"
-          ls -la "$SRC"
+          # El build deja el sitio estático en dist/client (y el bundle de
+          # servidor en dist/server, que NO debe publicarse).
+          if [ -d dist/client ]; then
+            SRC=dist/client
+          else
+            SRC=dist
+          fi
+          # Solo se publica la carpeta del cliente: se copia a un directorio
+          # aparte para no arrastrar dist/server ni el propio dist/client.
+          rm -rf dist/publish
+          cp -R "$SRC" dist/publish
+          cd dist/publish
           # Red de seguridad: si el build no generó index.html, usamos el shell.
-          if [ ! -f "$SRC/index.html" ]; then cp "$SRC/_shell.html" "$SRC/index.html"; fi
+          if [ ! -f index.html ]; then cp _shell.html index.html; fi
           # GitHub Pages sirve 404.html en rutas desconocidas; así el SPA
           # arranca igual cuando alguien entra por un enlace directo.
-          cp "$SRC/index.html" "$SRC/404.html"
+          cp index.html 404.html
           # Evita que Jekyll ignore carpetas que empiezan con guion bajo.
-          touch "$SRC/.nojekyll"
+          touch .nojekyll
+          echo "Contenido que se publicará:"
+          ls -la
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./dist/publish
           destination_dir: .
           keep_files: false
           force_orphan: true
