@@ -1,0 +1,1 @@
+import{E as e}from"./index-D4YufFTo.js";var t=e(),n=()=>(0,t.jsx)(`div`,{className:`p-10 text-center`,children:`Catálogo no disponible.`});export{n as notFoundComponent};
